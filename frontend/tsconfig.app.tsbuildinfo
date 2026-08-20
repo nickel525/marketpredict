@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/api.ts","./src/format.ts","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/errorbanner.tsx","./src/components/layout.tsx","./src/components/metriccard.tsx","./src/pages/backtest.tsx","./src/pages/rankings.tsx","./src/pages/stockdetail.tsx"],"version":"5.9.3"}
