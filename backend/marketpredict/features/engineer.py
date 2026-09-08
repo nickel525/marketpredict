@@ -171,13 +171,20 @@ def _add_earnings_features(df: pd.DataFrame, earnings: pd.DataFrame) -> pd.DataF
         if ev is None or len(ev) == 0:
             parts.append(grp)
             continue
-        dates = pd.to_datetime(grp["date"]).to_numpy()
-        nxt = np.searchsorted(ev, dates, side="left")
+        dates = pd.to_datetime(grp["date"]).reset_index(drop=True)
+        events_idx = pd.DatetimeIndex(pd.to_datetime(ev))
+        if events_idx.tz is not None:
+            events_idx = events_idx.tz_convert("UTC").tz_localize(None)
+        nxt = events_idx.searchsorted(dates, side="left")
         prev = nxt - 1
-        next_dates = np.array([ev[i] if i < len(ev) else np.datetime64("NaT") for i in nxt])
-        prev_dates = np.array([ev[i] if i >= 0 else np.datetime64("NaT") for i in prev])
-        grp["days_to_earnings"] = (pd.to_datetime(next_dates) - pd.to_datetime(dates)) / pd.Timedelta(days=1)
-        grp["days_since_earnings"] = (pd.to_datetime(dates) - pd.to_datetime(prev_dates)) / pd.Timedelta(days=1)
+        next_dates = pd.Series(pd.NaT, index=dates.index, dtype="datetime64[ns]")
+        prev_dates = pd.Series(pd.NaT, index=dates.index, dtype="datetime64[ns]")
+        valid_next = nxt < len(events_idx)
+        next_dates.iloc[np.flatnonzero(valid_next)] = events_idx[nxt[valid_next]]
+        valid_prev = prev >= 0
+        prev_dates.iloc[np.flatnonzero(valid_prev)] = events_idx[prev[valid_prev]]
+        grp["days_to_earnings"] = (next_dates - dates).dt.days.to_numpy()
+        grp["days_since_earnings"] = (dates - prev_dates).dt.days.to_numpy()
         parts.append(grp)
     return pd.concat(parts, ignore_index=True)
 
